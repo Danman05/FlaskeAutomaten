@@ -6,7 +6,19 @@ using System.Threading.Tasks;
 
 namespace FlaskeAutomaten
 {
-    internal abstract class Drink
-    {
-    }
+	internal abstract class Drink
+	{
+		private string name;
+
+		public string Name
+		{
+			get { return name; }
+			set { name = value; }
+		}
+
+		public Drink(string name)
+		{
+			this.Name = name;
+		}
+	}
 }

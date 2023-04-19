@@ -8,5 +8,9 @@ namespace FlaskeAutomaten
 {
     internal class Beer : Drink
     {
+        public Beer() : base("beer")
+        {
+
+        }
     }
 }

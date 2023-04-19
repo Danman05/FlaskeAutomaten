@@ -6,73 +6,50 @@ namespace FlaskeAutomaten
 {
     internal class Program
     {
+        // Queues
+        public static Queue<Drink> drinkQ = new();
         public static Queue<Beer> beerQ = new();
         public static Queue<Soda> sodaQ = new();
-        public static Queue<Drink> drinkQ = new();
+
         static void Main()
         {
-
+            
             Thread producerThread = new(Produce);
             Thread splitterConsumerThread = new(SplitterConsumer);
-            Thread consumerBeerThread = new(Produce);
-            Thread consumerSodaThread = new(Produce);
-            Thread printerThread = new(PrintLayout);
+            Thread consumerDrinkThread = new(DisposeBottle);
 
             producerThread.Start();
             splitterConsumerThread.Start();
-            printerThread.Start();
+            consumerDrinkThread.Start();
 
 
             producerThread.Join();
             splitterConsumerThread.Join();
-            printerThread.Join();
+
+
             Console.Read();
-
-
-
         }
-        static void PrintLayout()
-        {
-            while (true)
-            {
-                try
-                {
-                    Console.Clear();
 
-                    Monitor.Enter(drinkQ);
-                    Monitor.Enter(sodaQ);
-                    Monitor.Enter(beerQ);
-                }
-                finally
-                {
-
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine($"Drinks waiting to be sorted: {drinkQ.Count}");
-                    sb.AppendLine($"Soda bottles: {sodaQ.Count}");
-                    sb.AppendLine($"Beer bottles: {beerQ.Count}");
-                    Console.WriteLine(sb);
-
-                    Monitor.Exit(drinkQ);
-                    Monitor.Exit(sodaQ);
-                    Monitor.Exit(beerQ);
-                    Thread.Sleep(200);
-                }
-            }
-        }
+        /// <summary>
+        /// Produces drink bottles (beer or soda) and adds them to a shared queue (drinkQ).
+        /// It uses a random number generator to decide whether to add a beer or soda bottle.
+        /// </summary>
         static void Produce()
         {
             Random random = new();
             int randomNum;
-
+            string writeProduceString = "";
             while (true)
             {
                 try
                 {
                     Monitor.Enter(drinkQ);
-                    if (drinkQ.Count < 5)
+                    Console.Clear();
+                    if (drinkQ.Count < 3)
                     {
-                        while (drinkQ.Count < 35)
+                        while (drinkQ.Count < 20)
                         {
+                            writeProduceString = "";
                             randomNum = random.Next(1, 3);
 
                             if (randomNum == 1)
@@ -88,17 +65,25 @@ namespace FlaskeAutomaten
                     }
                     else
                     {
-
+                        writeProduceString = "[Info] Bottle producer waits";
                     }
                 }
                 finally
                 {
                     Monitor.Exit(drinkQ);
-                    Thread.Sleep(200);
+                    Console.WriteLine($"Unsorted bottles: {drinkQ.Count}");
+                    Console.WriteLine($"Soda bottles: {sodaQ.Count}");
+                    Console.WriteLine($"Beer bottles: {beerQ.Count}");
+                    Console.WriteLine($"{writeProduceString}");
+                    Thread.Sleep(500);
                 }
             }
         }
 
+        /// <summary>
+        /// Consumes drink bottles from a shared queue (drinkQ) and adds them to their respective drink type queues (sodaQ or beerQ).
+        /// If drinkQ is empty, the method waits until it is notified
+        /// </summary>
         static void SplitterConsumer()
         {
             Drink drink;
@@ -114,12 +99,15 @@ namespace FlaskeAutomaten
                         }
                         else
                         {
+
+                            // Check drink type
                             drink = drinkQ.Dequeue();
-                            if (drink is Soda)
+
+                            if (drink.Name == "soda")
                             {
-                                sodaQ.Enqueue(((Soda)drink));
+                                sodaQ.Enqueue((Soda)drink);
                             }
-                            else if (drink is Beer)
+                            else if (drink.Name == "beer")
                             {
                                 beerQ.Enqueue(((Beer)drink));
                             }
@@ -133,17 +121,52 @@ namespace FlaskeAutomaten
                 }
                 finally
                 {
-                    Thread.Sleep(200);
+                    Thread.Sleep(500);
                 }
 
             }
         }
+
+        /// <summary>
+        /// It uses a while loop to continually check if there are at least 10 bottles in the drink type queue.
+        /// If there are, it dequeues 10 bottles and disposes of them.
+        /// </summary>
         static void DisposeBottle()
         {
-            // TODO: Dispose sodaQ and beerQ when above certain amount
-            while (sodaQ.Count != 0)
+            
+            while (true)
             {
-
+                try
+                {
+                    if (Monitor.TryEnter(sodaQ))
+                    {
+                        // start disposing soda
+                        if (sodaQ.Count >= 10)
+                        {
+                            Console.WriteLine("[Info] Disposing soda");
+                            for (int i = 0; i < 10; i++)
+                            {
+                                sodaQ.Dequeue();
+                            }
+                        }
+                        Monitor.Exit(sodaQ);
+                    }
+                    if (Monitor.TryEnter(beerQ))
+                    {
+                        if (beerQ.Count >= 10)
+                        {
+                            Console.WriteLine("[Info] Disposing beer");
+                            for (int i = 0; i < 10; i++)
+                            {
+                                beerQ.Dequeue();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    Thread.Sleep(500);
+                }
             }
         }
     }
