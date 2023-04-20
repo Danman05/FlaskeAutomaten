@@ -161,6 +161,7 @@ namespace FlaskeAutomaten
                                 beerQ.Dequeue();
                             }
                         }
+                        Monitor.Exit(beerQ);
                     }
                 }
                 finally
