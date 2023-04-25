@@ -18,7 +18,7 @@ namespace FlaskeAutomaten
 
 		public Drink(string name)
 		{
-			this.Name = name;
+			this.name = name;
 		}
 	}
 }

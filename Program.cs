@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 
@@ -10,6 +11,7 @@ namespace FlaskeAutomaten
         public static Queue<Drink> drinkQ = new();
         public static Queue<Beer> beerQ = new();
         public static Queue<Soda> sodaQ = new();
+      
 
         static void Main()
         {
@@ -115,12 +117,15 @@ namespace FlaskeAutomaten
                             {
                                 Console.WriteLine("Error");
                             }
+
                         }
-                        Monitor.Exit(drinkQ);
                     }
                 }
                 finally
                 {
+                    if (Monitor.IsEntered(drinkQ))
+                        Monitor.Exit(drinkQ);
+                        
                     Thread.Sleep(500);
                 }
 
